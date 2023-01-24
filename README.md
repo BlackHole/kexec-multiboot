@@ -1,10 +1,13 @@
 # kexec-multiboot
 A multiboot kernel solution for Vuplus boxes
 
+details at:
+https://board.openbh.net/threads/vu-real-multiboot-now-available.3077/
+
 needed patches:
 [kexec-multiboot] tagged patch at the following repository
 
-- ofgwrite 
+- ofgwrite (required to flash slots)
 https://github.com/oe-alliance/ofgwrite/pull/14
 
 - image manager 
