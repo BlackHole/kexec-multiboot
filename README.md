@@ -3,7 +3,7 @@ A multiboot kernel solution for Vuplus boxes
 
 History
 ---
-On Vuplus boxes in the past there were different solutiond to test images... meoboot, openmultiboot and maybe others.
+On Vuplus boxes in the past there were different solutions to test images... meoboot, openmultiboot and maybe others.
 I've started modifying openmultiboot some time ago since as I wasn't happy with it. I started modifying it by wrapping it with kexec 
 to load a kernel instead of flashing the box every time.
 
