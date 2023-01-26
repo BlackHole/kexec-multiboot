@@ -30,6 +30,25 @@ So.. the two intramfs emulates the multiboot logic used in other boxes.
 - 2nd intramfs: overrides the static cmdline, mount the flash rootfs into /boot (to manage STARTUP_ONCE), fixes some compatibility issue due to a common bug in enigma2
 (https://github.com/torvalds/linux/blob/v5.9/Documentation/ABI/testing/sysfs-firmware-ofw) the stable api to use device tree is /proc/device-tree and not the /sys entry. 
 
+
+Preparation:
+---
+
+1st stage initrd: 
+- bitbake initramfs-kexec-multiboot-image
+- copy openbh-5.1.012.release-vuultimo4k.rootfs.cpio.gz into meta-oe-alliance/meta-brands/meta-vuplus/recipes-linux/linux-vuplus-*/initramfs-kexec.cpio.gz
+
+1st stage kernel with initrd linked:
+- apply the patches to a working oe-a tree
+- bitbake -c cleansstate linux-vuplus
+- bitbake linux-vuplus
+- the zImage produced is the 1st stage kernel
+
+2nd stage initrd: 
+[to be completed]
+
+
+
 More details at:
 https://board.openbh.net/threads/vu-real-multiboot-now-available.3077/
 
