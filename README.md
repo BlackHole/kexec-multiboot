@@ -4,10 +4,10 @@ A multiboot kernel solution for Vuplus boxes
 History
 ---
 On Vuplus boxes in the past there were different solutions to test images... meoboot, openmultiboot and maybe others.
-I've started modifying openmultiboot some time ago since as I wasn't happy with it. I started modifying it by wrapping it with kexec 
+I started modifying openmultiboot some time ago since as I wasn't happy with it. I started modifying it by wrapping it with kexec 
 to load a kernel instead of flashing the box every time.
 
-Kexec is a system call that enables you to load and boot into another kernel from the currently running kernel. This is useful for kernel developers or anyone that wants to reboot very quickly without waiting for the whole BIOS boot process to finish. Note that kexec may not work correctly for you due to devices not fully re-initializing when using this method, however this is rarely the case. (source: ArchLinux wiki)
+Kexec is a system call that enables you to load and boot into another kernel from the currently running kernel. This is useful for kernel developers or anyone that wants to reboot very quickly without waiting for the whole BIOS boot process to finish. Note that kexec may not work correctly for you due to devices not fully re-initialising when using this method, however this is rarely the case. (source: ArchLinux wiki)
 It seems that this hybrid solution can't work on all boxes because the broadcom drivers doesn't initialise correctly without a full reboot.
 
 
