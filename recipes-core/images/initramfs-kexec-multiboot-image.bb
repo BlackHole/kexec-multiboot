@@ -7,6 +7,7 @@ PACKAGE_INSTALL = "busybox initramfs-kexec kexec ${ROOTFS_BOOTSTRAP_INSTALL}"
 IMAGE_FEATURES = ""
 
 export IMAGE_BASENAME = "initramfs-kexec-multiboot-image"
+IMAGE_NAME:append = ".kexec-multiboot"
 IMAGE_NAME_SUFFIX = ".initramfs-kexec"
 IMAGE_LINGUAS = ""
 
