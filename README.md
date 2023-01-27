@@ -46,7 +46,7 @@ Preparation:
 
 2nd stage initramfs:  
 - bitbake initramfs-kexec-multiboot-startup-image
-- builds/openbh/release/vuultimo4k/tmp/deploy/images/vuultimo4k/openbh-5.1.012.release-vuultimo4k.initramfs-kexec-startup.rootfs.cpio.gz is the STARTUP.cpio.gz to be laced in ther / of the rootfs to used by the 1st stage initramfs.
+- builds/openbh/release/vuultimo4k/tmp/deploy/images/vuultimo4k/openbh-5.1.012.release-vuultimo4k.initramfs-kexec-startup.rootfs.cpio.gz is the STARTUP.cpio.gz to be placed in the / of the rootfs to used by the 1st stage initramfs.
 
 
 More details at:
