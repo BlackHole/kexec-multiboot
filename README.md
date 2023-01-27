@@ -36,7 +36,7 @@ Preparation:
 
 1st stage initramfs:  
 - bitbake initramfs-kexec-multiboot-image
-- copy builds/openbh/release/vuultimo4k/tmp/deploy/images/vuultimo4k/openbh-5.1.012.release-vuultimo4k.initramfs-kexec.rootfs.cpio.gz into meta-oe-alliance/meta-brands/meta-vuplus/recipes-linux/linux-vuplus-*/initramfs-kexec.cpio.gz (on each linux vuplus directory)
+- copy builds/openbh/release/vuultimo4k/tmp/deploy/images/vuultimo4k/openbh-5.1.012.release-vuultimo4k.kexec-multiboot.initramfs-kexec.initramfs-kexec.rootfs.cpio.gz into meta-oe-alliance/meta-brands/meta-vuplus/recipes-linux/linux-vuplus-*/initramfs-kexec.cpio.gz (on each linux vuplus directory)
 
 1st stage kernel with initramfs linked:  
 - apply the patches to a working oe-a tree
@@ -46,7 +46,7 @@ Preparation:
 
 2nd stage initramfs:  
 - bitbake initramfs-kexec-multiboot-startup-image
-- builds/openbh/release/vuultimo4k/tmp/deploy/images/vuultimo4k/openbh-5.1.012.release-vuultimo4k.initramfs-kexec-startup.rootfs.cpio.gz is the STARTUP.cpio.gz to be placed in the / of the rootfs to used by the 1st stage initramfs.
+- builds/openbh/release/vuultimo4k/tmp/deploy/images/vuultimo4k/openbh-5.1.012.release-vuultimo4k.initramfs-kexec.initramfs-kexec-startup.rootfs.cpio.gz is the STARTUP.cpio.gz to be placed in the / of the rootfs to used by the 1st stage initramfs.
 
 
 More details at:
