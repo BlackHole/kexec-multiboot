@@ -1,9 +1,36 @@
 #!/bin/sh
 
-echo "kexec init"
+echo "##############################################################################"
+echo "kexecboot init"
+echo "##############################################################################"
+echo
 
 mount -n -t proc proc /proc
 mount -n -t sysfs sysfs /sys
+
+MODEL=`cat /proc/device-tree/bolt/board | tr "[A-Z]" "[a-z]"`
+
+case $MODEL in
+solo4k|uno4k|ultimo4k)
+    KERNEL=mmcblk0p1
+    ROOTFS=mmcblk0p4
+;;
+uno4kse)
+    KERNEL=mmcblk0p1
+    ROOTFS=mmcblk0p4
+;;
+zero4k)
+    KERNEL=mmcblk0p4
+    ROOTFS=mmcblk0p7
+;;
+duo4k|duo4kse)
+    KERNEL=mmcblk0p6
+    ROOTFS=mmcblk0p9
+;;
+*)
+    echo "this box isn't supported yet"
+;;
+esac
 
 # read cmdline
 CMDLINE=`cat /proc/cmdline`
@@ -32,18 +59,53 @@ do
 done
 
 mount -n $ROOT /newroot/
-
 NEWROOT="/newroot"
 
-# read cmdline from STARTUP in flash
-CMDLINE=`cat $NEWROOT/STARTUP`
-echo "$CMDLINE"
+#wait for USB switch to initialize
+sleep 2
+mdev -s
+for device in sda sda1 sdb sdb1 sdc sdc1 scdd sdd1
+do
+  if [ ! -b /dev/$device ]; then
+      echo "INFO: /dev/$device is not a block device... skip"
+      continue
+  fi
+  mkdir -p /tmp/$device
+  mount -n /dev/$device /tmp/$device 2>/dev/null
+  [ -f /tmp/$device/STARTUP_RECOVERY ];
+  RC=$?
+  umount /tmp/$device 2>/dev/null
+  if [ $RC = 0 ]; then
+    echo "INFO: STARTUP_RECOVERY found on /dev/$device"
+    echo "INFO: copying STARTUP_RECOVERY into STARTUP"
+    cp $NEWROOT/STARTUP_RECOVERY $NEWROOT/STARTUP
+    break
+  else
+    echo "INFO: STARTUP_RECOVERY not present in /dev/$device"
+  fi
+done
 
-for x in $CMDLINE; do
+# read cmdline from STARTUP in flash
+if [ -f $NEWROOT/STARTUP_ONCE ]; then
+    echo "INFO: loading STARTUP_ONCE from $ROOT..."
+    STARTUP=`cat $NEWROOT/STARTUP_ONCE`
+else
+    echo "INFO: loading STARTUP from $ROOT..."
+    STARTUP=`cat $NEWROOT/STARTUP`
+fi
+echo "STARTUP: $STARTUP"
+
+SINITRD="STARTUP.cpio.gz"
+
+for x in $STARTUP; do
   case "$x" in
-    BOOT_IMAGE=*)
-      BOOT_IMAGE="${x#BOOT_IMAGE=}"
-      echo "Found BOOT_IMAGE $BOOT_IMAGE"
+    kernel=*)
+      SKERNEL="${x#kernel=}"
+      echo "Found kernel $SKERNEL"
+      ;;
+    initrd=*)
+      SINITRD="${x#initrd=}"
+      echo "Found initrd $SINITRD"
       ;;
     root=*)
       SROOT=$(echo "${x#root=}" | tr -d '"')
@@ -59,8 +121,7 @@ done
 # wait until startup root is available
 mdev -s
 CNT=0
-timeout=1
-while [ $CNT -lt 40 ]
+while [ $CNT -lt 10 ]
 do
   echo "WAITING"
   usleep 200000
@@ -77,20 +138,27 @@ do
   fi
 done
 
-if [ ! -b $SROOT ]; then
-  echo "Device $SROOT not found... fallback to $ROOT"
-  SROOT=$ROOT
-fi
-
 #let us to use an usb device
-if [ $ROOT != $SROOT ]; then
-  mkdir -p /snewroot/
-  mount -n $SROOT /snewroot/
-  SNEWROOT="/snewroot"
+if [ -b $SROOT ] && [ $ROOT != $SROOT  ]; then
+  mount -n $SROOT /newroot_ext/
+  SNEWROOT="/newroot_ext"
+  SKERNELDIR=${SNEWROOT}
+elif [ ! -b $SROOT ]; then
+  echo "Device $SROOT not found... fallback to $ROOT"
+  SKERNELDIR=/dev
+  SKERNEL=$KERNEL
+  SNEWROOT=$NEWROOT
 else
   SNEWROOT=$NEWROOT
+  SKERNELDIR=${SNEWROOT}
 fi
 
-kexec -d -l ${SNEWROOT}${BOOT_IMAGE} --initrd="${NEWROOT}/STARTUP.cpio.gz" --command-line="$(cat /proc/cmdline)"
+echo
+echo "##############################################################################"
+echo "booting kernel: ${SKERNELDIR}/${SKERNEL}"
+echo "booting initrd: ${NEWROOT}/${SINITRD}"
+echo "##############################################################################"
+
+kexec -d -l ${SKERNELDIR}/${SKERNEL} --initrd="${NEWROOT}/$SINITRD" --command-line="$(cat /proc/cmdline)"
 kexec -d -e
 
