@@ -1,13 +1,13 @@
-SUMMARY = "Initramfs image for kexec multiboot"
+SUMMARY = "Initramfs image for kexec multiboot startup"
 DESCRIPTION = "This image provides kexec multiboot (linux as bootloader) and helpers."
 
-PACKAGE_INSTALL = "busybox initramfs-kexec kexec mtd-utils-ubifs ${ROOTFS_BOOTSTRAP_INSTALL}"
+PACKAGE_INSTALL = "busybox initramfs-kexec-startup ${ROOTFS_BOOTSTRAP_INSTALL}"
 
 # Do not pollute the initrd image with rootfs features
 IMAGE_FEATURES = ""
 
-export IMAGE_BASENAME = "initramfs-kexec"
-IMAGE_NAME_SUFFIX = ".initramfs-kexec"
+export IMAGE_BASENAME = "initramfs-kexec-multiboot-image"
+IMAGE_NAME_SUFFIX = ".initramfs-kexec-startup"
 IMAGE_LINGUAS = ""
 
 # Some BSPs use IMAGE_FSTYPES_<machine override> which would override
