@@ -34,19 +34,19 @@ So.. the two intramfs emulates the multiboot logic used in other boxes.
 Preparation:
 ---
 
-1st stage initrd: 
+1st stage initramfs:  
 - bitbake initramfs-kexec-multiboot-image
-- copy openbh-5.1.012.release-vuultimo4k.rootfs.cpio.gz into meta-oe-alliance/meta-brands/meta-vuplus/recipes-linux/linux-vuplus-*/initramfs-kexec.cpio.gz
+- copy builds/openbh/release/vuultimo4k/tmp/deploy/images/vuultimo4k/openbh-5.1.012.release-vuultimo4k.initramfs-kexec.rootfs.cpio.gz into meta-oe-alliance/meta-brands/meta-vuplus/recipes-linux/linux-vuplus-*/initramfs-kexec.cpio.gz (on each linux vuplus directory)
 
-1st stage kernel with initrd linked:
+1st stage kernel with initramfs linked:  
 - apply the patches to a working oe-a tree
 - bitbake -c cleansstate linux-vuplus
 - bitbake linux-vuplus
-- the zImage produced is the 1st stage kernel
+- the builds/openbh/release/vuultimo4k/tmp/deploy/images/vuultimo4k/zImage--3.14.28-oea4.2-r4-vuultimo4k-20230124223117.bin produced is the 1st stage kernel
 
-2nd stage initrd: 
-[to be completed]
-
+2nd stage initramfs:  
+- bitbake initramfs-kexec-multiboot-startup-image
+- builds/openbh/release/vuultimo4k/tmp/deploy/images/vuultimo4k/openbh-5.1.012.release-vuultimo4k.initramfs-kexec-startup.rootfs.cpio.gz is the STARTUP.cpio.gz to be laced in ther / of the rootfs to used by the 1st stage initramfs.
 
 
 More details at:
