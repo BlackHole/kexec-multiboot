@@ -128,6 +128,7 @@ then
     else
       echo "$LOGGER: $ROOTSUBDIR is not present or no directory. Fallback to root." | tee -a $NEWROOT/kexec-multiboot.log
       kernel="/zImage"
+      ROOT=${ROOT}
       ROOTSUBDIR="linuxrootfs0"
       ERROR="${ERROR}:subdir_missing"
     fi
