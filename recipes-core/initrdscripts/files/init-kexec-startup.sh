@@ -127,6 +127,8 @@ then
       grep -q '/newroot_ext' /proc/mounts && umount /newroot_ext
     else
       echo "$LOGGER: $ROOTSUBDIR is not present or no directory. Fallback to root." | tee -a $NEWROOT/kexec-multiboot.log
+      KERNEL="/zImage="
+      ROOTSUBDIR="linuxrootfs0"
       ERROR="${ERROR}:subdir_missing"
     fi
   fi
