@@ -60,6 +60,7 @@ done
 
 mount -n $ROOT /newroot/
 NEWROOT="/newroot"
+SROOTWAIT=10
 
 #wait for USB switch to initialize
 sleep 2
@@ -111,6 +112,10 @@ for x in $STARTUP; do
       SROOT=$(echo "${x#root=}" | tr -d '"')
       echo "Found root $SROOT"
       ;;
+    rootwait=*)
+      SROOTWAIT=$(echo "${x#rootwait=}" | tr -d '"')
+      echo "Found rootwait $SROOTWAIT"
+      ;;
     rootsubdir=*)
       ROOTSUBDIR="/${x#rootsubdir=}"
       echo "Found rootsubdir $ROOTSUBDIR"
@@ -121,7 +126,7 @@ done
 # wait until startup root is available
 mdev -s
 CNT=0
-while [ $CNT -lt 10 ]
+while [ $CNT -lt ${SROOTWAIT} ]
 do
   echo "WAITING"
   usleep 200000
