@@ -13,6 +13,7 @@ CMDLINE=`cat /proc/cmdline`
 echo "$CMDLINE"
 
 NEWCMDLINE="kexec=1"
+ERROR=":"
 
 for x in $CMDLINE; do
   case "$x" in
@@ -40,6 +41,7 @@ done
 
 mount -n $ROOT /newroot/
 NEWROOT="/newroot"
+SROOTWAIT=10
 
 # read cmdline from STARTUP in flash
 if [ -f $NEWROOT/STARTUP_ONCE ]; then
@@ -58,17 +60,18 @@ for x in $STARTUP; do
     kernel=*)
       kernel="${x#kernel=}"
       echo "Found kernel $kernel"
-      NEWCMDLINE="${NEWCMDLINE} ${x}"
       ;;
     root=*)
       SROOT=$(echo "${x#root=}" | tr -d '"')
       echo "Found root $SROOT"
-      NEWCMDLINE="${NEWCMDLINE} ${x}"
+      ;;
+    rootwait=*)
+      SROOTWAIT=$(echo "${x#rootwait=}" | tr -d '"')
+      echo "Found rootwait $SROOTWAIT"
       ;;
     rootsubdir=*)
       ROOTSUBDIR="${x#rootsubdir=}"
       echo "Found rootsubdir $ROOTSUBDIR"
-      NEWCMDLINE="${NEWCMDLINE} ${x}"
       ;;
   esac
 done
@@ -77,7 +80,7 @@ done
 # wait until startup root is available
 mdev -s
 CNT=0
-while [ $CNT -lt 10 ]
+while [ $CNT -lt ${SROOTWAIT} ]
 do
   echo "WAITING"
   usleep 200000
@@ -97,6 +100,7 @@ done
 if [ ! -b $SROOT ]; then
   echo "WARNING: Device $SROOT not found... fallback to $ROOT"
   SROOT=$ROOT
+  ERROR="${ERROR}:scan_device_fails"
 fi
 
 #let us to use an usb device
@@ -109,26 +113,28 @@ else
   SNEWROOT=$NEWROOT
 fi
 
-
-if [ $ROOTSUBDIR = linuxrootfs0 ]; then
-    unset ROOTSUBDIR
-fi
-
 if [ ! -z ${ROOTSUBDIR+x} ];
 then
-  if [ -d $SNEWROOT/$ROOTSUBDIR ];
-  then
-    echo "Mount bind $ROOTSUBDIR"
-    mount --bind $SNEWROOT/$ROOTSUBDIR /newroot_subdir
-    SNEWROOT="/newroot_subdir"
-    grep -q '/newroot_ext' /proc/mounts && umount /newroot_ext
-  else
-    echo "$ROOTSUBDIR is not present or no directory. Fallback to root."
+  if [ $ROOTSUBDIR != linuxrootfs0 ]; then
+    if [ -d $SNEWROOT/$ROOTSUBDIR ]
+    then
+      echo "Mount bind $ROOTSUBDIR"
+      mount --bind $SNEWROOT/$ROOTSUBDIR /newroot_subdir
+      SNEWROOT="/newroot_subdir"
+      grep -q '/newroot_ext' /proc/mounts && umount /newroot_ext
+    else
+      echo "$ROOTSUBDIR is not present or no directory. Fallback to root."
+      ERROR="${ERROR}:subdir_missing"
+    fi
   fi
 fi
-
 umount proc sys
 #umount proc
+
+NEWCMDLINE="${NEWCMDLINE} kernel=$kernel root=${SROOT} rootsubdir=$ROOTSUBDIR"
+if [ x${ERROR} != x":" ]; then
+    NEWCMDLINE="${NEWCMDLINE} error=${ERROR}"
+fi
 
 kver=$(uname -r)
 echo "##############################################################################"
