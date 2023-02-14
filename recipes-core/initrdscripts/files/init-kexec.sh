@@ -71,7 +71,7 @@ mdev -s
 for device in sda sda1 sdb sdb1 sdc sdc1 scdd sdd1
 do
   if [ ! -b /dev/$device ]; then
-      echo "$LOGGER: /dev/$device is not a block device... skip"
+      echo "$LOGGER: /dev/$device is not a block device... skip" | tee -a $NEWROOT/kexec-multiboot.log
       continue
   fi
   mkdir -p /tmp/$device
@@ -175,6 +175,6 @@ echo "$LOGGER: booting kernel: ${SKERNELDIR}/${SKERNEL}" | tee -a $NEWROOT/kexec
 echo "$LOGGER: booting initrd: ${NEWROOT}/${SINITRD}" | tee -a $NEWROOT/kexec-multiboot.log
 echo "$LOGGER: ##############################################################################" | tee -a $NEWROOT/kexec-multiboot.log
 
-kexec -d -l ${SKERNELDIR}/${SKERNEL} --initrd="${NEWROOT}/$SINITRD" --command-line="$(cat /proc/cmdline)"
+kexec -d -l ${SKERNELDIR}/${SKERNEL} --initrd="${NEWROOT}/$SINITRD" --command-line="$(cat /proc/cmdline)" | tee -a $NEWROOT/kexec-multiboot.log
 kexec -d -e
 
