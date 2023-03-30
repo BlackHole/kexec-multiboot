@@ -1,5 +1,6 @@
 # kexec-multiboot
 A multiboot kernel solution for Vuplus boxes
+(But can be adapted easily to other boxes)
 
 History
 ---
@@ -36,8 +37,9 @@ Booting a non SMP kernel solve
 By patching Kexec it start but initrd is not loaded.  
 Newer stblinux supports dtb for mipsel.
 I was able to boot the same kernel like vuduo2, but is not enough.
-Follows tests with more recent 5.19.
-
+If you want to use the current kernel (3.13) there is more problem..
+Kexec doesn't support CFE bootloader, so kexec guest kernel doesn't know the right amount of memory and can't read the requested initrd.
+So without multiple patch on guest and host kexec can't work on mispel.
 
 Preparation:
 ---
