@@ -68,7 +68,7 @@ SROOTWAIT=10
 #wait for USB switch to initialize
 sleep 2
 mdev -s
-for device in sda sda1 sdb sdb1 sdc sdc1 scdd sdd1
+for device in sda sda1 sdb sdb1 sdc sdc1 sdd sdd1
 do
   if [ ! -b /dev/$device ]; then
       echo "$LOGGER: /dev/$device is not a block device... skip" | tee -a $NEWROOT/kexec-multiboot.log
