@@ -1,0 +1,11 @@
+--- a/init-kexec.sh	2023-02-14 08:47:43.247597133 +0000
++++ b/init-kexec.sh	2023-04-09 21:14:37.299182237 +0000
+@@ -66,7 +66,7 @@
+ > $NEWROOT/kexec-multiboot.log
+ 
+ #wait for USB switch to initialize
+-sleep 2
++sleep 4
+ mdev -s
+ for device in sda sda1 sdb sdb1 sdc sdc1 sdd sdd1
+ do
