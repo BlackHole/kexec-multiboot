@@ -177,6 +177,7 @@ if [ $NEWROOT = $SNEWROOT ]; then
 else
     echo "$LOGGER: mount -o move $NEWROOT $SNEWROOT/boot/" | tee -a $NEWROOT/kexec-multiboot.log
     mount -o move $NEWROOT $SNEWROOT/boot/
+    NEWROOT=$SNEWROOT/boot
 fi
 echo | tee -a $NEWROOT/kexec-multiboot.log
 
