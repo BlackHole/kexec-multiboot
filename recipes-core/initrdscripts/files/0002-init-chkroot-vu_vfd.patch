@@ -1,0 +1,19 @@
+init-chkroot: load vu_vfd (front text display)
+
+Only for the boxes with vu-vfd (vuuno, vuduo, vuultimo, vusolo2).
+
+Upstream-Status: Inappropriate [machine specific]
+
+--- a/init-chkroot.sh
++++ b/init-chkroot.sh
+@@ -83,8 +83,10 @@
+   if mount -t vfat "$BOOT" /boot 2>/dev/null; then
+     KDIR=/lib/modules/`uname -r`/extra
+     insmod $KDIR/vu_ir.ko
++    insmod $KDIR/vu_vfd.ko
+     /usr/bin/bootmenu --root /boot
+     echo "[init] bootmenu exit code $? (10 = STARTUP changed)" > /dev/console
++    rmmod vu_vfd 2>/dev/null
+     rmmod vu_ir 2>/dev/null
+     rmmod vu_fb 2>/dev/null
+     sync

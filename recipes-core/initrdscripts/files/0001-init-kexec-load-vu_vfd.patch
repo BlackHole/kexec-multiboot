@@ -1,0 +1,22 @@
+init-kexec: load vu_vfd (front text display)
+
+Only for the boxes with vu-vfd (vuuno, vuduo, vuultimo, vusolo2), applied
+by initramfs-kexec.bb: the module path is fixed at build time.
+
+Upstream-Status: Inappropriate [machine specific]
+
+--- a/init-kexec.sh	2026-10-10 22:13:35.425064190 +0000
++++ b/init-kexec.sh	2026-10-10 22:13:35.430064190 +0000
+@@ -81,9 +81,12 @@
+   # when it shows the wait hint or the menu (with wait=0 a normal boot does not touch the video)
+   insmod /lib/modules/`uname -r`/extra/vu_ir.ko
++  # front text display (vu-vfd, boxes with a VFD / text LCD; after vu_ir)
++  insmod /lib/modules/`uname -r`/extra/vu_vfd.ko
+   /usr/bin/bootmenu --root $NEWROOT
+   RC=$?
+   echo "$LOGGER: bootmenu exit code $RC (10 = STARTUP changed)" | tee -a $NEWROOT/kexec-multiboot.log
+   # unload: give the display back to BOLT's splash before kexec
++  rmmod vu_vfd 2>/dev/null
+   rmmod vu_ir 2>/dev/null
+   rmmod vu_fb 2>/dev/null
+ fi

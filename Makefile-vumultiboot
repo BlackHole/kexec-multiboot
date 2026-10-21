@@ -1,0 +1,156 @@
+#!/usr/bin/make -f
+#
+# Makefile-vumultiboot - build the multiboot kernel of a Vu+ box with the
+# OE-Alliance build-enviroment. Run it from the build-enviroment directory,
+# where this layer is cloned:
+#
+#   MACHINE=<box> DISTRO=openbh make -f kexec-multiboot/Makefile-vumultiboot
+#
+# The default target "kernel" picks the right one for the box:
+#   4K boxes (BOLT):         kernel-kexec   -> kernel_auto/<machine>/kernel_auto.bin
+#   MIPS gen1/gen2 (CFE):    kernel-chkroot -> kernel_auto/<machine>/kernel_cfe_auto.bin
+#
+# kernel-kexec includes the build-enviroment Makefile and, for the box:
+#   - initialises builds/<distro>/<type>/<machine>      (glibc: the kernel)
+#   - initialises builds/<distro>/<type>/<machine>-musl (musl: the initramfs)
+#   - adds this layer to both bblayers.conf
+#   - builds the musl initramfs, then the kernel with it built in
+#   - copies the result to kernel_auto/<machine>/kernel_auto.bin
+#
+# Other targets: kexec-init, kexec-initramfs, kexec-startup (4K),
+# chkroot-initramfs (MIPS).
+#
+# MIPS boxes (CFE, chkroot multiboot, no kexec): kernel-chkroot builds the box
+# kernel with the chkroot init + bootmenu initramfs (musl, xz) built in.
+
+KEXEC_LAYER := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+
+include Makefile
+
+.DEFAULT_GOAL := kernel
+
+# MIPS boxes with CFE: chkroot multiboot (no kexec)
+MIPS_MACHINES = vusolo vuduo vuuno vuultimo vuzero vusolose vusolo2 vuduo2
+IS_MIPS = $(filter $(MIPS_MACHINES),$(MACHINE))
+
+MUSL_DIR    = $(BUILD_DIR)-musl
+KEXEC_OUT   = $(CURDIR)/kernel_auto/$(MACHINE)
+KEXEC_CONF  = $(BUILD_DIR)/conf/kexec-musl.conf
+KEXEC_CPIO  = $(MUSL_DIR)/tmp/deploy/images/$(MACHINE)/initramfs-kexec-multiboot-$(MACHINE).cpio.gz
+# size of the kernel partition of the MIPS boxes (kernel_cfe_auto.bin must fit),
+# from /proc/mtd or the CFE log of each box; empty = not measured, not checked
+#   gen1 mtd1: vuuno (boot.log), vuultimo (CFE log), vusolo, vuduo (/proc/mtd) 4 MiB measured;
+#   gen2 mtd2: vusolo2 0x700000 measured,
+#   vuduo2 0x700000 measured, vuzero, vusolose 0x700000 measured
+CHKROOT_KERNEL_MAX_vuuno    = 4194304
+CHKROOT_KERNEL_MAX_vuultimo = 4194304
+CHKROOT_KERNEL_MAX_vuduo    = 4194304
+CHKROOT_KERNEL_MAX_vusolo   = 4194304
+CHKROOT_KERNEL_MAX_vusolo2  = 7340032
+CHKROOT_KERNEL_MAX_vuduo2   = 7340032
+CHKROOT_KERNEL_MAX_vuzero   = 7340032
+CHKROOT_KERNEL_MAX_vusolose = 7340032
+CHKROOT_KERNEL_MAX = $(CHKROOT_KERNEL_MAX_$(MACHINE))
+
+# size of the kernel partition of the 4K boxes (eMMC, gdisk -l /dev/mmcblk0);
+# empty = not measured, not checked
+#   vuultimo4k mmcblk0p1 "kernel" 32768 sectors = 16 MiB (measured)
+#   vuzero4k mmcblk0p4 "kernel" 32768 sectors = 16 MiB (measured)
+#   vuuno4k mmcblk0p1 "kernel" 32768 sectors = 16 MiB (measured)
+#   vuuno4kse mmcblk0p1 "kernel" 32768 sectors = 16 MiB (measured)
+#   vuduo4k mmcblk0p6 "kernel" 32768 sectors = 16 MiB (measured)
+#   vuduo4kse mmcblk0p6 "kernel" 32768 sectors = 16 MiB (measured)
+#   vusolo4k mmcblk0p1 "kernel" 32768 sectors = 16 MiB (measured)
+KEXEC_KERNEL_MAX_vuultimo4k = 16777216
+KEXEC_KERNEL_MAX_vuzero4k   = 16777216
+KEXEC_KERNEL_MAX_vuuno4k    = 16777216
+KEXEC_KERNEL_MAX_vuuno4kse  = 16777216
+KEXEC_KERNEL_MAX_vuduo4k    = 16777216
+KEXEC_KERNEL_MAX_vuduo4kse  = 16777216
+KEXEC_KERNEL_MAX_vusolo4k   = 16777216
+KEXEC_KERNEL_MAX = $(KEXEC_KERNEL_MAX_$(MACHINE))
+
+# check size of $(1) against $(2) (bytes, empty = unknown)
+define size_check
+	@size=$$(stat -c %s $(1)); \
+	if [ -n "$(2)" ] && [ $$size -gt $(2) ]; then \
+		echo "ERROR: $(notdir $(1)) is $$size bytes, the kernel partition holds $(2)"; \
+		mv $(1) $(1).too-big; exit 1; \
+	fi; echo "size $$size bytes (partition: $(or $(2),unknown))"
+endef
+CHKROOT_CPIO = $(MUSL_DIR)/tmp/deploy/images/$(MACHINE)/initramfs-chkroot-$(MACHINE).cpio.xz
+KEXEC_BBLAYERS = $(strip $(BBLAYERS)) $(KEXEC_LAYER)
+
+# what the musl build directory needs on top of the generated local.conf
+define MUSL_CONF
+# --- kexec-multiboot (Makefile-vumultiboot) ---
+TCLIBC = "musl"
+# not used in the initramfs, but must parse with musl
+INSANE_SKIP:pn-vuplus-hdmi-in-helper += "file-rdeps"
+endef
+export MUSL_CONF
+
+kexec-check:
+	@if [ -z "$(MACHINE)" ]; then \
+		echo "usage: MACHINE=<box> DISTRO=<distro> make -f $(notdir $(KEXEC_LAYER))/Makefile-vumultiboot [target]"; \
+		exit 1; \
+	fi
+
+# the kernel of the box: kexec (4K) or chkroot (MIPS)
+kernel: $(if $(IS_MIPS),kernel-chkroot,kernel-kexec)
+
+kexec-init: kexec-check
+	@$(MAKE) --no-print-directory -f Makefile init MACHINE=$(MACHINE) DISTRO=$(DISTRO) \
+		DISTRO_TYPE=$(DISTRO_TYPE) BBLAYERS="$(KEXEC_BBLAYERS)"
+	@$(MAKE) --no-print-directory -f Makefile init MACHINE=$(MACHINE) DISTRO=$(DISTRO) \
+		DISTRO_TYPE=$(DISTRO_TYPE) BBLAYERS="$(KEXEC_BBLAYERS)" BUILD_DIR=$(MUSL_DIR)
+	@grep -q '^TCLIBC = "musl"' $(MUSL_DIR)/conf/local.conf || \
+		echo "$$MUSL_CONF" >> $(MUSL_DIR)/conf/local.conf
+	@echo 'KEXEC_INITRAMFS_FILE:pn-linux-vuplus-kexec = "$(KEXEC_CPIO)"' > $(KEXEC_CONF)
+	@echo 'CHKROOT_INITRAMFS_FILE:pn-linux-vuplus-chkroot = "$(CHKROOT_CPIO)"' >> $(KEXEC_CONF)
+	@echo "kexec-multiboot: $(BUILD_DIR) and $(MUSL_DIR) ready"
+
+kexec-initramfs: kexec-init
+	@. $(MUSL_DIR)/env.source && cd $(MUSL_DIR) && bitbake initramfs-kexec-multiboot-image
+
+kernel-kexec: kexec-only kexec-initramfs
+	@. $(BUILD_DIR)/env.source && cd $(BUILD_DIR) && bitbake -R $(KEXEC_CONF) linux-vuplus-kexec
+	@mkdir -p $(KEXEC_OUT)
+	@cp -L $(TMPDIR)/deploy/images/$(MACHINE)/kernel-kexec/zImage $(KEXEC_OUT)/kernel_auto.bin
+	$(call size_check,$(KEXEC_OUT)/kernel_auto.bin,$(KEXEC_KERNEL_MAX))
+	@echo
+	@echo "kernel_auto.bin: $(KEXEC_OUT)/kernel_auto.bin"
+	@cd $(KEXEC_OUT) && $(XSUM) kernel_auto.bin
+
+kexec-only: kexec-check
+	@if [ -n "$(IS_MIPS)" ]; then \
+		echo "$(MACHINE) is a MIPS box (CFE): it uses kernel-chkroot, not kexec"; exit 1; \
+	fi
+
+chkroot-only: kexec-check
+	@if [ -z "$(IS_MIPS)" ]; then \
+		echo "$(MACHINE) is not a MIPS CFE box: it uses kernel-kexec"; exit 1; \
+	fi
+
+# 2nd stage initramfs (STARTUP.cpio.gz in the root of the flash rootfs)
+kexec-startup: kexec-only kexec-init
+	@. $(BUILD_DIR)/env.source && cd $(BUILD_DIR) && bitbake initramfs-kexec-multiboot-startup-image
+	@mkdir -p $(KEXEC_OUT)
+	@cp -L $$(ls -t $(TMPDIR)/deploy/images/$(MACHINE)/*initramfs-kexec-startup*.cpio.gz | head -n 1) $(KEXEC_OUT)/STARTUP.cpio.gz
+	@echo "STARTUP.cpio.gz: $(KEXEC_OUT)/STARTUP.cpio.gz"
+
+# MIPS: chkroot initramfs (musl) and the kernel with it built in
+chkroot-initramfs: chkroot-only kexec-init
+	@. $(MUSL_DIR)/env.source && cd $(MUSL_DIR) && bitbake initramfs-chkroot-image
+
+kernel-chkroot: chkroot-only chkroot-initramfs
+	@. $(BUILD_DIR)/env.source && cd $(BUILD_DIR) && bitbake -R $(KEXEC_CONF) linux-vuplus-chkroot
+	@mkdir -p $(KEXEC_OUT)
+	@cp -L $(TMPDIR)/deploy/images/$(MACHINE)/kernel-chkroot/kernel_cfe_auto.bin $(KEXEC_OUT)/kernel_cfe_auto.bin
+	$(call size_check,$(KEXEC_OUT)/kernel_cfe_auto.bin,$(CHKROOT_KERNEL_MAX))
+	@echo
+	@echo "kernel_cfe_auto.bin: $(KEXEC_OUT)/kernel_cfe_auto.bin"
+	@cd $(KEXEC_OUT) && $(XSUM) kernel_cfe_auto.bin
+
+.PHONY: kernel kexec-check kexec-only chkroot-only kexec-init kexec-initramfs kernel-kexec \
+	kexec-startup chkroot-initramfs kernel-chkroot

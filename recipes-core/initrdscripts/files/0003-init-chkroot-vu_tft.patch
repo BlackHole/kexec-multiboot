@@ -1,0 +1,19 @@
+init-chkroot: load vu_tft (vuduo2 colour front TFT)
+
+Only for the vuduo2, on top of 0002 (vu_vfd: its OLED).
+
+Upstream-Status: Inappropriate [machine specific]
+
+--- a/init-chkroot.sh
++++ b/init-chkroot.sh
+@@ -84,8 +84,10 @@
+     KDIR=/lib/modules/`uname -r`/extra
+     insmod $KDIR/vu_ir.ko
+     insmod $KDIR/vu_vfd.ko
++    insmod $KDIR/vu_tft.ko
+     /usr/bin/bootmenu --root /boot
+     echo "[init] bootmenu exit code $? (10 = STARTUP changed)" > /dev/console
++    rmmod vu_tft 2>/dev/null
+     rmmod vu_vfd 2>/dev/null
+     rmmod vu_ir 2>/dev/null
+     rmmod vu_fb 2>/dev/null

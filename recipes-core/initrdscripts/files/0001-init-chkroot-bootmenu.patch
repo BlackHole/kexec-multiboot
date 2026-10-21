@@ -1,0 +1,35 @@
+init-chkroot: open the multiboot menu (bootmenu) before reading STARTUP
+
+The original chkroot init (initramfs-mipsel.cpio.xz of meta-vuplus) is kept;
+only the bootmenu call is added: the startup vfat partition is mounted on
+/boot, vu_ir is loaded (bootmenu loads vu_fb), bootmenu may copy a
+STARTUP_x to STARTUP, then everything is unloaded and the chkroot logic
+goes on unchanged.
+
+Upstream-Status: Inappropriate [kexec-multiboot]
+
+--- a/init-chkroot.sh
++++ b/init-chkroot.sh
+@@ -76,6 +76,22 @@
+ echo "[init] BOOT found:$BOOT" > /dev/console
+ echo "[init] ROOTFSTYPE found:$ROOTFSTYPE" > /dev/console
+ 
++# kexec-multiboot: multiboot menu (vu_fb/vu_ir + bootmenu) on the startup partition.
++# bootmenu copies the chosen STARTUP_x to STARTUP; the chkroot logic below reads it.
++if [ -n "$BOOT" ] && [ -x /usr/bin/bootmenu ]; then
++  mkdir -p /boot
++  if mount -t vfat "$BOOT" /boot 2>/dev/null; then
++    KDIR=/lib/modules/`uname -r`/extra
++    insmod $KDIR/vu_ir.ko
++    /usr/bin/bootmenu --root /boot
++    echo "[init] bootmenu exit code $? (10 = STARTUP changed)" > /dev/console
++    rmmod vu_ir 2>/dev/null
++    rmmod vu_fb 2>/dev/null
++    sync
++    umount /boot
++  fi
++fi
++
+ mkdir -p /boot
+ if mount -t vfat "$BOOT" /boot 2>/dev/null; then
+   echo "[init] $BOOT mounted as FAT" > /dev/console
